@@ -61,6 +61,20 @@ Notes:
 - If started without STA, the script relaunches itself in STA mode when possible.
 - If your execution policy blocks scripts, use the command above as-is.
 
+## Run without cloning (optional)
+
+You can run the app without cloning or manually downloading the `.ps1` file by using PowerShell to fetch and execute the script from GitHub Raw:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -STA -Command "irm https://raw.githubusercontent.com/MetehanKacar/DuplicateFinder/main/DuplicateFinder.ps1 | iex"
+```
+
+Important:
+
+- Git CLI by itself cannot execute files directly from a remote repository.
+- The command above downloads and executes the latest `main` script at runtime.
+- For safer/reproducible runs, pin to a specific commit URL instead of `main`.
+
 ## Usage
 
 1. Click Select Folder.
