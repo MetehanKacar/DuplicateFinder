@@ -518,6 +518,10 @@ function T([string]$Key, [object[]]$FormatArgs = @()) {
         }
     }
 
+    if ($text -is [string] -and $text.Contains('`n')) {
+        $text = $text.Replace('`n', [Environment]::NewLine)
+    }
+
     if ($null -ne $FormatArgs -and $FormatArgs.Count -gt 0) {
         $resolvedArgs = @($FormatArgs)
 
@@ -2151,8 +2155,6 @@ function Show-DeletePreviewDialog([object[]]$FilesToDelete, [string]$Title, [str
     $splitDeletePreview.Orientation = 'Vertical'
     $splitDeletePreview.SplitterWidth = 6
     $splitDeletePreview.Panel1MinSize = 430
-    $splitDeletePreview.Panel2MinSize = 260
-    $splitDeletePreview.SplitterDistance = 700
     $pCenter.Controls.Add($splitDeletePreview)
 
     $lvDeletePreview = New-Object System.Windows.Forms.ListView
@@ -2282,6 +2284,26 @@ function Show-DeletePreviewDialog([object[]]$FilesToDelete, [string]$Title, [str
         $lvDeletePreview.Columns[0].Width = $w0
         $lvDeletePreview.Columns[1].Width = $w1
         $lvDeletePreview.Columns[2].Width = $w2
+    }
+
+    $layoutDeletePreviewSplit = {
+        $w = [int]$splitDeletePreview.Width
+        if ($w -le 0) { return }
+
+        $desiredP1 = 430
+        $desiredP2 = 260
+
+        # Clamp min sizes against current width so SplitContainer constraints stay valid.
+        $panel1Min = [int][Math]::Min($desiredP1, [Math]::Max(0, $w - $desiredP2))
+        $panel2Min = [int][Math]::Min($desiredP2, [Math]::Max(0, $w - $panel1Min))
+
+        if ($splitDeletePreview.Panel1MinSize -ne $panel1Min) { $splitDeletePreview.Panel1MinSize = $panel1Min }
+        if ($splitDeletePreview.Panel2MinSize -ne $panel2Min) { $splitDeletePreview.Panel2MinSize = $panel2Min }
+
+        $maxDistance = [int][Math]::Max($panel1Min, $w - $panel2Min)
+        $targetDistance = [int][Math]::Min(700, $maxDistance)
+        if ($targetDistance -lt $panel1Min) { $targetDistance = $panel1Min }
+        if ($splitDeletePreview.SplitterDistance -ne $targetDistance) { $splitDeletePreview.SplitterDistance = $targetDistance }
     }
 
     $previewThumbCache = @{}
@@ -2437,6 +2459,7 @@ function Show-DeletePreviewDialog([object[]]$FilesToDelete, [string]$Title, [str
     $btnRemoveFromDeleteList.Add_Click({ & $removeSelectedFromList })
 
     $pBottom.Add_Resize({ & $layoutDeletePreviewButtons })
+    $splitDeletePreview.Add_SizeChanged({ & $layoutDeletePreviewSplit })
     $lvDeletePreview.Add_Resize({ & $resizeDeleteColumns })
     $lvDeletePreview.Add_SelectedIndexChanged({ & $updateSelectedPreview })
     $lvDeletePreview.Add_KeyDown({
@@ -2455,6 +2478,7 @@ function Show-DeletePreviewDialog([object[]]$FilesToDelete, [string]$Title, [str
     })
     $picDeletePreview.Add_Resize({ & $updateSelectedPreview })
     $dlg.Add_Shown({
+        & $layoutDeletePreviewSplit
         & $layoutDeletePreviewButtons
         & $refreshDeleteList
         $btnApproveDeletePreview.Focus()
