@@ -1060,6 +1060,7 @@ $lblPath.Text = T 'path_not_selected'
 $lblPath.ForeColor = [System.Drawing.Color]::Gray
 $lblPath.Location = New-Object System.Drawing.Point(655, 18)
 $lblPath.AutoSize = $false
+$lblPath.AutoEllipsis = $true
 $lblPath.Anchor = 'Top,Left,Right'
 $lblPath.Size = New-Object System.Drawing.Size(580, 20)
 $topPanel.Controls.Add($lblPath)
@@ -1545,7 +1546,7 @@ function Apply-Language {
         $lblPath.ForeColor = [System.Drawing.Color]::FromArgb(140, 210, 255)
     }
 
-    if ($lblStatus.Text -eq "  Hazir. Klasor secip TARA butonuna basin." -or $lblStatus.Text -eq "  Ready. Select a folder and press SCAN.") {
+    if ([string]::IsNullOrWhiteSpace($script:SelectedFolderPath) -and $script:Duplicates.Count -eq 0 -and -not $script:IsListBuilding) {
         $lblStatus.Text = T 'status_ready'
     }
 
@@ -1611,12 +1612,30 @@ function Apply-ResponsiveLayout {
     $lblInfoSize.MaximumSize = New-Object System.Drawing.Size($maxLabelW, 0)
 
     if ($script:LanguageCombo -and $script:LanguageLabel) {
-        $comboW = $script:LanguageCombo.Width
-        $comboX = [Math]::Max(740, $topPanel.ClientSize.Width - $comboW - 14)
-        $script:LanguageCombo.Location = New-Object System.Drawing.Point($comboX, 23)
-        $script:LanguageLabel.Location = New-Object System.Drawing.Point(($comboX - 78), 6)
+        $script:LanguageCombo.Width = 74
+        $comboW = [Math]::Max(66, $script:LanguageCombo.Width)
+        $comboX = [Math]::Max(0, $topPanel.ClientSize.Width - $comboW - 12)
+        $comboY = 16
+        $script:LanguageCombo.Location = New-Object System.Drawing.Point($comboX, $comboY)
 
-        $pathW = [Math]::Max(140, ($comboX - 10) - $lblPath.Left)
+        $langW = [System.Windows.Forms.TextRenderer]::MeasureText($script:LanguageLabel.Text, $script:LanguageLabel.Font).Width
+        $langW = [Math]::Max(24, $langW)
+        $labelX = [Math]::Max(0, $comboX - $langW - 8)
+
+        $pathRight = $labelX - 12
+        $pathW = $pathRight - $lblPath.Left
+
+        if ($pathW -lt 140) {
+            $script:LanguageLabel.Visible = $false
+            $pathRight = $comboX - 8
+            $pathW = $pathRight - $lblPath.Left
+        }
+        else {
+            $script:LanguageLabel.Visible = $true
+            $script:LanguageLabel.Location = New-Object System.Drawing.Point($labelX, ($comboY + 4))
+        }
+
+        $pathW = [Math]::Max(100, $pathW)
         $lblPath.Size = New-Object System.Drawing.Size($pathW, $lblPath.Height)
     }
 }
