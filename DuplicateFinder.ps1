@@ -372,8 +372,8 @@ function T([string]$Key, [object[]]$Args = @()) {
         }
         default {
             switch ($Key) {
-                'app_title' { 'Duplicate Finder  -  Image, Video & Audio' }
-                'app_header' { 'DUPLICATE FINDER' }
+                'app_title' { 'DuplicateFinder  -  Image, Video & Audio' }
+                'app_header' { 'DUPLICATEFINDER' }
                 'select_folder' { 'Select Folder' }
                 'include_subfolders' { 'Include subfolders' }
                 'scan' { 'SCAN' }

@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in improving Duplicate Finder.
+Thanks for your interest in improving DuplicateFinder.
 
 ## Before you start
 

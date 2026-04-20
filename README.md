@@ -1,4 +1,4 @@
-# Duplicate Finder
+# DuplicateFinder
 
 A Windows desktop duplicate finder built with PowerShell and WinForms.
 
