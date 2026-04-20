@@ -1,0 +1,41 @@
+name: PowerShell CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate PowerShell syntax
+        shell: pwsh
+        run: |
+          $errors = @()
+          $tokens = @()
+          $null = [System.Management.Automation.Language.Parser]::ParseFile("DuplicateFinder.ps1", [ref]$tokens, [ref]$errors)
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_ }
+            throw "PowerShell parse validation failed."
+          }
+
+      - name: Verify key documentation files
+        shell: pwsh
+        run: |
+          $required = @(
+            "README.md",
+            "LICENSE",
+            "CONTRIBUTING.md",
+            "CODE_OF_CONDUCT.md",
+            "SECURITY.md"
+          )
+          foreach ($file in $required) {
+            if (-not (Test-Path -LiteralPath $file)) {
+              throw "Missing required file: $file"
+            }
+          }

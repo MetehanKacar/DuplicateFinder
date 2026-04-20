@@ -1,0 +1,25 @@
+# OS
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Logs and temp
+*.log
+*.tmp
+*.temp
+
+# Editor
+.vscode/*.log
+
+# PowerShell history/transcripts
+*.ps1xml
+*.pssc
+*.psrc
+
+# Build/artifacts (if added later)
+bin/
+obj/
+out/
+
+# Test output
+TestResults/
