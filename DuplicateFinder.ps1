@@ -315,7 +315,7 @@ function T([string]$Key, [object[]]$FormatArgs = @()) {
 
                 'delete_preview_title_default' { 'Kaydirma' }
                 'delete_preview_title_suffix' { '{0} - Silinecek Dosyalar' }
-                'delete_preview_help' { 'Dosyayi secince sagda onizleme gorursunuz. Del tusu veya LISTEDEN CIKAR ile secilenleri listeden alabilirsiniz.' }
+                'delete_preview_help' { 'Dosyalari tik ac/kapat ile secin. Satiri secince sagda onizleme gorunur. Del tusu veya LISTEDEN CIKAR ile satiri listeden kaldirabilirsiniz.' }
                 'delete_preview_col_file' { 'Dosya' }
                 'delete_preview_col_size' { 'Boyut' }
                 'delete_preview_col_folder' { 'Klasor' }
@@ -326,6 +326,7 @@ function T([string]$Key, [object[]]$FormatArgs = @()) {
                 'delete_preview_empty' { 'Listede silinecek dosya kalmadi.' }
                 'delete_preview_source_label' { 'Kaynak' }
                 'delete_preview_summary' { '{0} dosya silinecek  |  Toplam: {1}{2}' }
+                'delete_source_selected_list' { 'Listeden secilenler' }
 
                 'delete_confirm_examples_header' { 'Secilenlerden ornekler:' }
                 'delete_confirm_more_files' { ' - ... +{0} dosya daha' }
@@ -461,7 +462,7 @@ function T([string]$Key, [object[]]$FormatArgs = @()) {
 
                 'delete_preview_title_default' { 'Swipe' }
                 'delete_preview_title_suffix' { '{0} - Files To Delete' }
-                'delete_preview_help' { 'Select a file to preview it on the right. Use Del key or REMOVE FROM LIST to remove selected rows.' }
+                'delete_preview_help' { 'Use checkboxes to include/exclude files. Select a row to preview on the right. Use Del key or REMOVE FROM LIST to remove rows from list.' }
                 'delete_preview_col_file' { 'File' }
                 'delete_preview_col_size' { 'Size' }
                 'delete_preview_col_folder' { 'Folder' }
@@ -472,6 +473,7 @@ function T([string]$Key, [object[]]$FormatArgs = @()) {
                 'delete_preview_empty' { 'No files left in the delete list.' }
                 'delete_preview_source_label' { 'Source' }
                 'delete_preview_summary' { '{0} files will be deleted  |  Total: {1}{2}' }
+                'delete_source_selected_list' { 'Selected from list' }
 
                 'delete_confirm_examples_header' { 'Examples from selected files:' }
                 'delete_confirm_more_files' { ' - ... +{0} more files' }
@@ -2160,16 +2162,34 @@ function Show-DeletePreviewDialog([object[]]$FilesToDelete, [string]$Title, [str
     $lvDeletePreview = New-Object System.Windows.Forms.ListView
     $lvDeletePreview.Dock = 'Fill'
     $lvDeletePreview.View = 'Details'
+    $lvDeletePreview.CheckBoxes = $true
     $lvDeletePreview.FullRowSelect = $true
     $lvDeletePreview.GridLines = $true
     $lvDeletePreview.HideSelection = $false
     $lvDeletePreview.MultiSelect = $true
     $lvDeletePreview.BackColor = [System.Drawing.Color]::FromArgb(22, 22, 28)
     $lvDeletePreview.ForeColor = [System.Drawing.Color]::White
-    [void]$lvDeletePreview.Columns.Add((T 'delete_preview_col_file'), 260)
-    [void]$lvDeletePreview.Columns.Add((T 'delete_preview_col_size'), 110)
+    [void]$lvDeletePreview.Columns.Add((T 'delete_preview_col_file'), 320)
+    [void]$lvDeletePreview.Columns.Add((T 'delete_preview_col_size'), 120)
     [void]$lvDeletePreview.Columns.Add((T 'delete_preview_col_folder'), 520)
     $splitDeletePreview.Panel1.Controls.Add($lvDeletePreview)
+
+    $deleteListThumbs = New-Object System.Windows.Forms.ImageList
+    $deleteListThumbs.ColorDepth = 'Depth32Bit'
+    $deleteListThumbs.ImageSize = New-Object System.Drawing.Size(72, 72)
+    $lvDeletePreview.SmallImageList = $deleteListThumbs
+
+    $listThumbIndexByPath = @{}
+    $checkedPathSet = @{}
+    foreach ($f in @($workingTargets)) {
+        if (-not $f) { continue }
+        $fp = [string]$f.FullName
+        if ([string]::IsNullOrWhiteSpace($fp)) { continue }
+        $checkedPathSet[$fp] = $true
+    }
+    $dialogState = [pscustomobject]@{
+        IsRefreshing = $false
+    }
 
     $pPreview = New-Object System.Windows.Forms.Panel
     $pPreview.Dock = 'Fill'
@@ -2277,10 +2297,10 @@ function Show-DeletePreviewDialog([object[]]$FilesToDelete, [string]$Title, [str
     }
 
     $resizeDeleteColumns = {
-        $w0 = 260
-        $w1 = 110
+        $w0 = 320
+        $w1 = 120
         $remaining = $lvDeletePreview.ClientSize.Width - $w0 - $w1 - 6
-        $w2 = [int][Math]::Max(220, $remaining)
+        $w2 = [int][Math]::Max(240, $remaining)
         $lvDeletePreview.Columns[0].Width = $w0
         $lvDeletePreview.Columns[1].Width = $w1
         $lvDeletePreview.Columns[2].Width = $w2
@@ -2306,11 +2326,57 @@ function Show-DeletePreviewDialog([object[]]$FilesToDelete, [string]$Title, [str
         if ($splitDeletePreview.SplitterDistance -ne $targetDistance) { $splitDeletePreview.SplitterDistance = $targetDistance }
     }
 
+    $getDeleteListThumbIndex = {
+        param([string]$Path)
+
+        if ([string]::IsNullOrWhiteSpace($Path)) { return -1 }
+        if ($listThumbIndexByPath.ContainsKey($Path)) { return [int]$listThumbIndexByPath[$Path] }
+
+        $img = $null
+        try {
+            $img = Make-Thumb -Path $Path -W 72 -H 72
+        }
+        catch {
+            $img = $null
+        }
+
+        if (-not $img) {
+            $bmp = New-Object System.Drawing.Bitmap(72, 72)
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            try {
+                $g.Clear([System.Drawing.Color]::FromArgb(40, 40, 48))
+                $pen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(88, 88, 100))
+                try {
+                    $g.DrawRectangle($pen, 1, 1, 69, 69)
+                }
+                finally {
+                    $pen.Dispose()
+                }
+            }
+            finally {
+                $g.Dispose()
+            }
+            $img = $bmp
+        }
+
+        [void]$deleteListThumbs.Images.Add($img)
+        $idx = $deleteListThumbs.Images.Count - 1
+        $listThumbIndexByPath[$Path] = $idx
+        return $idx
+    }
+
     $previewThumbCache = @{}
 
     $updateSummary = {
+        $selectedCount = 0
         $totalSize = [long]0
         foreach ($f in @($workingTargets)) {
+            if (-not $f) { continue }
+            $fp = [string]$f.FullName
+            if ([string]::IsNullOrWhiteSpace($fp)) { continue }
+            if (-not $checkedPathSet.ContainsKey($fp)) { continue }
+
+            $selectedCount++
             try { $totalSize += [long]$f.Length } catch { }
         }
         $srcText = if ([string]::IsNullOrWhiteSpace($SourceLabel)) {
@@ -2319,8 +2385,8 @@ function Show-DeletePreviewDialog([object[]]$FilesToDelete, [string]$Title, [str
         else {
             "  |  $(T 'delete_preview_source_label'): $SourceLabel"
         }
-        $lblSummary.Text = T 'delete_preview_summary' @($workingTargets.Count, (Format-Size $totalSize), $srcText)
-        $btnApproveDeletePreview.Enabled = ($workingTargets.Count -gt 0)
+        $lblSummary.Text = T 'delete_preview_summary' @($selectedCount, (Format-Size $totalSize), $srcText)
+        $btnApproveDeletePreview.Enabled = ($selectedCount -gt 0)
     }
 
     $updateSelectedPreview = {
@@ -2391,6 +2457,25 @@ function Show-DeletePreviewDialog([object[]]$FilesToDelete, [string]$Title, [str
             }
         }
 
+        $validPathSet = @{}
+        foreach ($f in @($workingTargets)) {
+            if (-not $f) { continue }
+            $p = [string]$f.FullName
+            if ([string]::IsNullOrWhiteSpace($p)) { continue }
+            $validPathSet[$p] = $true
+            if (-not $checkedPathSet.ContainsKey($p)) {
+                $checkedPathSet[$p] = $true
+            }
+        }
+
+        foreach ($k in @($checkedPathSet.Keys)) {
+            $kp = [string]$k
+            if (-not $validPathSet.ContainsKey($kp)) {
+                [void]$checkedPathSet.Remove($kp)
+            }
+        }
+
+        $dialogState.IsRefreshing = $true
         $lvDeletePreview.BeginUpdate()
         try {
             $lvDeletePreview.Items.Clear()
@@ -2399,11 +2484,19 @@ function Show-DeletePreviewDialog([object[]]$FilesToDelete, [string]$Title, [str
                 $nm = try { [string]$f.Name } catch { T 'unknown_name' }
                 $len = try { [long]$f.Length } catch { [long]0 }
                 $dir = try { [string]$f.DirectoryName } catch { "" }
+                $path = try { [string]$f.FullName } catch { "" }
+                $imgIndex = & $getDeleteListThumbIndex $path
 
-                $it = New-Object System.Windows.Forms.ListViewItem($nm)
+                $it = New-Object System.Windows.Forms.ListViewItem($nm, $imgIndex)
                 [void]$it.SubItems.Add((Format-Size $len))
                 [void]$it.SubItems.Add($dir)
                 $it.Tag = $i
+                if ([string]::IsNullOrWhiteSpace($path)) {
+                    $it.Checked = $false
+                }
+                else {
+                    $it.Checked = $checkedPathSet.ContainsKey($path)
+                }
                 [void]$lvDeletePreview.Items.Add($it)
             }
 
@@ -2422,6 +2515,7 @@ function Show-DeletePreviewDialog([object[]]$FilesToDelete, [string]$Title, [str
         }
         finally {
             $lvDeletePreview.EndUpdate()
+            $dialogState.IsRefreshing = $false
         }
 
         & $updateSummary
@@ -2440,19 +2534,33 @@ function Show-DeletePreviewDialog([object[]]$FilesToDelete, [string]$Title, [str
         $idxToRemove = @($idxToRemove | Sort-Object -Descending)
         foreach ($ix in $idxToRemove) {
             if ($ix -lt 0 -or $ix -ge $workingTargets.Count) { continue }
+            $p = [string]$workingTargets[$ix].FullName
+            if (-not [string]::IsNullOrWhiteSpace($p) -and $checkedPathSet.ContainsKey($p)) {
+                [void]$checkedPathSet.Remove($p)
+            }
             $workingTargets.RemoveAt($ix)
         }
 
         & $refreshDeleteList
     }
 
-    $approved = $false
     $btnApproveDeletePreview.Add_Click({
-        if ($workingTargets.Count -eq 0) {
+        $approvedFiles = [System.Collections.ArrayList]::new()
+        foreach ($f in @($workingTargets)) {
+            if (-not $f) { continue }
+            $p = [string]$f.FullName
+            if ([string]::IsNullOrWhiteSpace($p)) { continue }
+            if (-not $checkedPathSet.ContainsKey($p)) { continue }
+            [void]$approvedFiles.Add($f)
+        }
+
+        if ($approvedFiles.Count -eq 0) {
             [System.Windows.Forms.MessageBox]::Show((T 'delete_preview_empty'), (T 'title_info'), 'OK', 'Information') | Out-Null
             return
         }
-        $approved = $true
+
+        $result.Approved = $true
+        $result.Files = @($approvedFiles)
         $dlg.Close()
     })
     $btnCancelDeletePreview.Add_Click({ $dlg.Close() })
@@ -2461,6 +2569,23 @@ function Show-DeletePreviewDialog([object[]]$FilesToDelete, [string]$Title, [str
     $pBottom.Add_Resize({ & $layoutDeletePreviewButtons })
     $splitDeletePreview.Add_SizeChanged({ & $layoutDeletePreviewSplit })
     $lvDeletePreview.Add_Resize({ & $resizeDeleteColumns })
+    $lvDeletePreview.Add_ItemChecked({
+        if ($dialogState.IsRefreshing) { return }
+
+        $ix = [int]$_.Item.Tag
+        if ($ix -lt 0 -or $ix -ge $workingTargets.Count) { return }
+        $p = [string]$workingTargets[$ix].FullName
+        if ([string]::IsNullOrWhiteSpace($p)) { return }
+
+        if ($_.Item.Checked) {
+            $checkedPathSet[$p] = $true
+        }
+        else {
+            [void]$checkedPathSet.Remove($p)
+        }
+
+        & $updateSummary
+    })
     $lvDeletePreview.Add_SelectedIndexChanged({ & $updateSelectedPreview })
     $lvDeletePreview.Add_KeyDown({
         if ($_.KeyCode -eq 'Delete') {
@@ -2492,9 +2617,8 @@ function Show-DeletePreviewDialog([object[]]$FilesToDelete, [string]$Title, [str
     }
     $dlg.Dispose()
 
-    $result = [pscustomobject]@{
-        Approved = $approved
-        Files = @($workingTargets)
+    if (-not $result.Approved) {
+        $result.Files = @()
     }
     return $result
 }
@@ -3482,7 +3606,17 @@ $btnDelete.Add_Click({
         [void]$targets.Add($script:FlatList[$ix])
     }
 
-    [void](Invoke-DeleteFiles -FilesToDelete @($targets) -SourceLabel "Listeden secilenler")
+    $sourceLabel = T 'delete_source_selected_list'
+    $deleteReview = Show-DeletePreviewDialog -FilesToDelete @($targets) -Title (T 'delete_preview_title_default') -SourceLabel $sourceLabel
+    if (-not $deleteReview -or -not $deleteReview.Approved) { return }
+
+    $finalTargets = @($deleteReview.Files)
+    if ($finalTargets.Count -eq 0) {
+        [System.Windows.Forms.MessageBox]::Show((T 'delete_preview_empty'), (T 'title_info'), 'OK', 'Information') | Out-Null
+        return
+    }
+
+    [void](Invoke-DeleteFiles -FilesToDelete $finalTargets -SourceLabel $sourceLabel -SkipConfirmation)
 })
 
 # ==================== GOSTER ====================
