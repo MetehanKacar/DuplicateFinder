@@ -2846,7 +2846,7 @@ function Start-SwipeReview {
 
         $cur = $reviewItems[$state.Index]
         $tp = Get-MediaTypeLabel (Get-MediaType $cur.Extension)
-        $lblStep.Text = T 'swipe_card_progress' @($state.Index + 1, $reviewItems.Count)
+        $lblStep.Text = T 'swipe_card_progress' @(($state.Index + 1), $reviewItems.Count)
         $lblInfoReview.Text = "$($cur.Name)  |  $tp  |  $(Format-Size $cur.Length)  |  $($cur.DirectoryName)"
 
         $previewW = [Math]::Max(420, $picReview.ClientSize.Width - 24)
@@ -3268,7 +3268,7 @@ $btnScan.Add_Click({
         $f = $candidates[$i]
         $progressBar.Value = $i + 1
         if ($i % 15 -eq 0) {
-            $lblStatus.Text = T 'status_fast_scan' @($i + 1, $candidates.Count)
+            $lblStatus.Text = T 'status_fast_scan' @(($i + 1), $candidates.Count)
             [System.Windows.Forms.Application]::DoEvents()
         }
         $h = Get-FastHash -Path $f.FullName -ByteCount 8192
@@ -3305,7 +3305,7 @@ $btnScan.Add_Click({
         $f = $finalCandidates[$i]
         $progressBar.Value = $i + 1
         if ($i % 5 -eq 0) {
-            $lblStatus.Text = T 'status_full_hash' @($i + 1, $finalCandidates.Count)
+            $lblStatus.Text = T 'status_full_hash' @(($i + 1), $finalCandidates.Count)
             [System.Windows.Forms.Application]::DoEvents()
         }
         $h = Get-FullHash -Path $f.FullName
