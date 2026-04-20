@@ -220,7 +220,7 @@ $THUMB_W = 120
 $THUMB_H = 120
 
 # ==================== YARDIMCI ====================
-function T([string]$Key, [object[]]$Args = @()) {
+function T([string]$Key, [object[]]$FormatArgs = @()) {
     $lang = if ($script:CurrentLanguage -eq 'tr') { 'tr' } else { 'en' }
 
     $text = switch ($lang) {
@@ -518,9 +518,22 @@ function T([string]$Key, [object[]]$Args = @()) {
         }
     }
 
-    if ($Args -and $Args.Count -gt 0) {
+    if ($null -ne $FormatArgs -and $FormatArgs.Count -gt 0) {
+        $resolvedArgs = @($FormatArgs)
+
+        # PowerShell can bind array inputs as a single nested element; flatten one level.
+        if ($resolvedArgs.Count -eq 1) {
+            $first = $resolvedArgs[0]
+            if ($first -is [System.Array]) {
+                $resolvedArgs = @($first)
+            }
+            elseif ($first -is [System.Collections.IList] -and -not ($first -is [string])) {
+                $resolvedArgs = @($first)
+            }
+        }
+
         try {
-            return [string]::Format($text, $Args)
+            return [string]::Format($text, [object[]]$resolvedArgs)
         }
         catch {
             return $text
