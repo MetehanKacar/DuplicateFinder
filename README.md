@@ -1,145 +1,195 @@
-# DuplicateFinder
+# Duplicate File Finder & Cleaner for Windows (PowerShell + WinForms)
 
-A Windows desktop duplicate finder built with PowerShell and WinForms.
+A fast, free, and open-source **Windows duplicate file remover and cleaner** built with PowerShell and WinForms.
 
-It scans images, videos, and audio files, groups true duplicates by hash, and helps you review and delete safely via Recycle Bin.
+It helps you find and remove duplicate files (images, videos, audio, and documents) using **hash-based detection**, and safely clean your system using **Recycle Bin protection**.
 
-## Why this project
+---
 
-Many duplicate cleaners are either paid, overcomplicated, or not transparent about detection logic.
-This tool is intentionally simple, local, and inspectable:
+## 🚀 Why this project
 
-- No cloud upload
-- No hidden service
-- Clear duplicate logic (size + hash)
-- Safe delete flow with preview and Recycle Bin
+Many duplicate file cleaners are:
+- Paid or subscription-based
+- Overcomplicated and slow
+- Not transparent about detection logic
 
-## Highlights
+This tool is designed to be:
+- ✔ Free and open-source
+- ✔ Fully local (no cloud uploads)
+- ✔ Transparent duplicate detection logic
+- ✔ Safe file deletion with preview and Recycle Bin support
 
-- Multi-media support: image, video, audio
-- True duplicate detection (not name-based)
-- Fast scan pipeline:
-  - Size grouping
-  - Fast MD5 on first 8 KB
+👉 A simple and effective **Windows duplicate file remover** focused on performance and clarity.
+
+---
+
+## ✨ Highlights
+
+- 📁 Multi-media duplicate detection (images, videos, audio)
+- ⚡ Fast scan pipeline:
+  - File size grouping
+  - Fast partial MD5 (first 8 KB)
   - Full-file MD5 verification
-- Grouped visual browsing with thumbnails
-- Bulk selection strategies:
-  - Select 1 per group
+- 🔍 True duplicate detection using hash comparison (not filename-based)
+- 🖼️ Visual grouped browsing with thumbnails
+- ☑️ Smart bulk selection strategies:
   - Keep 1 per group
-  - Select by specific folder
-  - Select all / clear selection
-- Swipe review mode for quick keep/delete decisions
-- Pre-delete review dialog
-- Recycle Bin delete support
-- Responsive WinForms layout
-- Turkish and English UI support (runtime switch)
+  - Select all duplicates
+  - Select by folder
+  - Clear selection
+- 👆 Swipe-style review mode for fast decisions
+- 🧾 Pre-delete confirmation dialog
+- ♻️ Safe deletion via Windows Recycle Bin
+- 🪟 Responsive WinForms UI
+- 🌍 Turkish & English language support (runtime switch)
 
-## Supported formats
+---
 
-- Images: `.jpg`, `.jpeg`, `.png`, `.bmp`, `.gif`, `.tiff`, `.tif`, `.webp`, `.ico`
-- Videos: `.mp4`, `.avi`, `.mkv`, `.mov`, `.wmv`, `.flv`, `.webm`, `.m4v`, `.mpg`, `.mpeg`, `.3gp`, `.ts`
-- Audio: `.mp3`, `.wav`, `.flac`, `.m4a`, `.aac`, `.ogg`, `.wma`, `.opus`, `.aiff`, `.amr`
+## 📁 Supported formats
 
-## Requirements
+Supports **Windows duplicate file cleanup** for:
 
-- Windows 10/11
-- Windows PowerShell 5.1+ (recommended)
-- Script must run in STA mode for WinForms
+### Images
+`.jpg`, `.jpeg`, `.png`, `.bmp`, `.gif`, `.tiff`, `.tif`, `.webp`, `.ico`
 
-## Quick start
+### Videos
+`.mp4`, `.avi`, `.mkv`, `.mov`, `.wmv`, `.flv`, `.webm`, `.m4v`, `.mpg`, `.mpeg`, `.3gp`, `.ts`
 
-1. Clone this repository.
-2. Open Windows PowerShell.
+### Audio
+`.mp3`, `.wav`, `.flac`, `.m4a`, `.aac`, `.ogg`, `.wma`, `.opus`, `.aiff`, `.amr`
+
+---
+
+## 🧠 Duplicate detection logic (important)
+
+This tool detects **true duplicate files on Windows** using a safe and accurate algorithm:
+
+A file is considered duplicate only if:
+
+1. File size matches  
+2. Fast MD5 hash (first 8 KB) matches  
+3. Full-file MD5 hash matches  
+
+👉 This prevents false positives and ensures accurate **duplicate file detection using hashing (MD5)**.
+
+---
+
+## 🛡️ Safety model
+
+- All deletions are reviewed before execution
+- Files are sent to **Recycle Bin (preferred safe delete method)**
+- Fallback direct delete only if Recycle Bin API fails
+- No background services or hidden processes
+
+---
+
+## ⚠️ Known limitations
+
+- Detects only **exact duplicates**, not similar files
+- Does not yet support perceptual image matching (pHash/aHash)
+- Metadata-only differences may not be detected as duplicates
+
+---
+
+## ⚙️ Requirements
+
+- Windows 10 / Windows 11
+- PowerShell 5.1+
+- Must run in **STA mode** (for WinForms UI)
+
+---
+
+## 🚀 Quick start
+
+1. Clone this repository  
+2. Open Windows PowerShell  
 3. Run:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -STA -File .\DuplicateFinder.ps1
-```
+````
 
-Notes:
+---
 
-- If started without STA, the script relaunches itself in STA mode when possible.
-- If your execution policy blocks scripts, use the command above as-is.
+## 🌐 Run without cloning (optional)
 
-## Run without cloning (optional)
-
-You can run the app without cloning or manually downloading the `.ps1` file by using PowerShell to fetch and execute the script from GitHub Raw:
+Run directly from GitHub:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -STA -Command "irm https://raw.githubusercontent.com/MetehanKacar/DuplicateFinder/main/DuplicateFinder.ps1 | iex"
 ```
 
-Important:
+⚠️ Note:
 
-- Git CLI by itself cannot execute files directly from a remote repository.
-- The command above downloads and executes the latest `main` script at runtime.
-- For safer/reproducible runs, pin to a specific commit URL instead of `main`.
+* This executes the latest version from `main`
+* For safer usage, pin to a commit instead of branch
 
-## Usage
+---
 
-1. Click Select Folder.
-2. Choose whether to include subfolders.
-3. Click Scan.
-4. Review duplicate groups.
-5. Use filters or swipe review mode.
-6. Delete selected files (sent to Recycle Bin).
+## 🧭 How to use
 
-## Language support
+1. Select a folder
+2. Enable subfolder scanning (optional)
+3. Click **Scan**
+4. Review duplicate groups
+5. Select files using smart selection tools
+6. Delete safely (Recycle Bin)
 
-- Use the top-right language selector (`TR` / `EN`) at runtime.
-- Static and dynamic UI texts are localized.
-- Strategy and media filter logic is language-independent internally.
+---
 
-## Duplicate logic (important)
+## 🌍 Language support
 
-A file is considered duplicate only if:
+* Turkish / English UI switch available at runtime
+* UI text is dynamically localized
+* Core logic is language-independent
 
-1. File size matches
-2. Fast MD5 (first 8 KB) matches
-3. Full-file MD5 matches
+---
 
-This avoids false positives from filename-only checks.
+## 🧩 Repository structure
 
-## Safety model
+* `DuplicateFinder.ps1` → Main application
+* `docs/ARCHITECTURE.md` → System design
+* `docs/LOCALIZATION.md` → Localization system
+* `docs/RELEASE_CHECKLIST.md` → Release workflow
+* `.github/` → CI & contribution templates
 
-- Delete flow includes preview and explicit confirmation.
-- Files are sent to Recycle Bin first (best effort).
-- If Recycle Bin API fails for a file, direct delete fallback is attempted.
+---
 
-## Known limitations
+## 🧪 CI
 
-- This tool finds exact duplicates, not visually similar files.
-- Different re-encodings or metadata-only variations may look similar but are not exact duplicates.
-- Perceptual similarity mode (pHash/aHash) is not implemented yet.
+GitHub Actions automatically:
 
-## Repository structure
+* Validates PowerShell syntax
+* Checks script integrity on push and PR
 
-- `DuplicateFinder.ps1`: Main app
-- `docs/ARCHITECTURE.md`: Technical design overview
-- `docs/LOCALIZATION.md`: Localization system and how to extend
-- `docs/RELEASE_CHECKLIST.md`: Pre-release and publishing checklist
-- `.github/`: CI and contribution templates
+---
 
-## CI
+## 🧠 Roadmap
 
-GitHub Actions validates script syntax on each push and pull request.
+Planned improvements:
 
-## Contributing
+* 🔮 Perceptual similarity detection (pHash / aHash)
+* 📦 Save & restore scan sessions
+* 🧾 Export scan reports (CSV / JSON)
+* ⚡ Performance optimizations for large datasets
+* 🖼️ Advanced media metadata columns (resolution, bitrate, duration)
 
-Contributions are welcome.
-Please read:
+---
 
-- `CONTRIBUTING.md`
-- `CODE_OF_CONDUCT.md`
-- `SECURITY.md`
+## 🔑 Keywords
 
-## Roadmap ideas
+Windows duplicate file remover, duplicate file finder, duplicate file cleaner, remove duplicate files Windows 10, PowerShell duplicate finder, free duplicate file remover, disk cleanup tool Windows, media duplicate remover, file deduplication tool
 
-- Similarity mode for near-duplicates (perceptual hash)
-- Export/import session decisions
-- Saved scan profiles
-- Optional metadata columns (duration, resolution, bitrate)
+---
 
-## License
+## ⭐ Support
 
-MIT License. See `LICENSE`.
+If this project helps you manage disk space and remove duplicate files efficiently:
+
+⭐ Star the repository to support development
+
+---
+
+## 📄 License
+
+MIT License — free to use and modify.
